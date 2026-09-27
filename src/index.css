@@ -1,0 +1,28 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --color-arakon-blue: #0B3C7A;
+    --color-arakon-blue-dark: #072854;
+    --color-arakon-green: #00A859;
+    --color-arakon-green-dark: #008A47;
+    --color-arakon-offwhite: #F5F5F5;
+    --color-arakon-gray: #4A4A4A;
+  }
+
+  body {
+    font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, sans-serif;
+    color: #4A4A4A;
+    background-color: #F5F5F5;
+    line-height: 1.6;
+  }
+
+  h1, h2, h3, h4, .font-display {
+    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
+    text-wrap: balance;
+  }
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}

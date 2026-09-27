@@ -1,0 +1,6 @@
+{
+  "name": "Árakon Corretora — Consultoria em Planos de Saúde, Benefícios e Seguros",
+  "description": "Consultoria especializada em planos de saúde, benefícios corporativos, seguros de vida e proteção patrimonial. Faça sua análise personalizada ou fale pelo WhatsApp.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
