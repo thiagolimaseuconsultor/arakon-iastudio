@@ -8,7 +8,7 @@ import {
   Scale,
   Briefcase,
   CheckCircle2,
-  Camera,
+  Upload,
 } from "lucide-react";
 import { ArakonLogo, ArakonShieldIcon } from "./components/ArakonLogo";
 import { QualificationForm } from "./components/QualificationForm";
@@ -19,33 +19,55 @@ import heroEditorialImg from "./assets/images/arakon_hero_editorial_179046851422
 import specialistThiagoImg from "./assets/images/thiago_frente_portrait_1790469845519.jpg";
 import corporateBenefitsImg from "./assets/images/arakon_corporate_office_signage_1790469836829.jpg";
 
-const SPECIALIST_PHOTO_STORAGE_KEY = "arakon_specialist_custom_photo_v1";
-
 export function App() {
   const [selectedProfile, setSelectedProfile] = useState<string>("");
   const [selectedSolution, setSelectedSolution] = useState<string>("");
   const [formTheme, setFormTheme] = useState<"light" | "dark">("light");
   const [isCrmOpen, setIsCrmOpen] = useState(false);
-  const [customSpecialistPhoto, setCustomSpecialistPhoto] = useState<string>(() => {
+
+  // Visível SOMENTE dentro do editor privado do AI Studio (ais-dev-...) até a foto oficial ser gravada no código.
+  // No link público compartilhado (ais-pre-...) e na Vercel, isso é sempre FALSE.
+  const isPrivateEditor =
+    typeof window !== "undefined" &&
+    (window.location.hostname.startsWith("ais-dev-") ||
+      window.location.hostname === "localhost");
+
+  const [photoSavedInCode, setPhotoSavedInCode] = useState<boolean>(() => {
     try {
-      return localStorage.getItem(SPECIALIST_PHOTO_STORAGE_KEY) || "";
+      return localStorage.getItem("arakon_real_photo_locked_v1") === "true";
     } catch {
-      return "";
+      return false;
     }
   });
+  const [livePhotoPreview, setLivePhotoPreview] = useState<string | null>(null);
+  const [isSavingPhoto, setIsSavingPhoto] = useState(false);
 
-  const handleSpecialistPhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSaveOfficialPhotoToCode = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    setIsSavingPhoto(true);
     const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === "string") {
-        setCustomSpecialistPhoto(reader.result);
-        try {
-          localStorage.setItem(SPECIALIST_PHOTO_STORAGE_KEY, reader.result);
-        } catch {
-          // Ignore storage quota errors
+    reader.onload = async () => {
+      const dataUrl = typeof reader.result === "string" ? reader.result : "";
+      if (!dataUrl) {
+        setIsSavingPhoto(false);
+        return;
+      }
+      setLivePhotoPreview(dataUrl);
+      try {
+        const res = await fetch("/__admin_save_photo", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ dataUrl }),
+        });
+        if (res.ok) {
+          localStorage.setItem("arakon_real_photo_locked_v1", "true");
+          setPhotoSavedInCode(true);
         }
+      } catch {
+        // Ignora erro silenciosamente
+      } finally {
+        setIsSavingPhoto(false);
       }
     };
     reader.readAsDataURL(file);
@@ -62,6 +84,35 @@ export function App() {
 
   return (
     <div className="min-h-screen flex flex-col bg-[#F5F5F5] text-[#4A4A4A] pb-14 md:pb-0">
+      {/* BARRA EXCLUSIVA DO EDITOR PRIVADO PARA GRAVAR A FOTO REAL NO CÓDIGO */}
+      {isPrivateEditor && !photoSavedInCode && (
+        <div className="bg-[#0B3C7A] text-white px-4 py-3 border-b border-white/15 z-50">
+          <div className="max-w-[1200px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="text-xs sm:text-sm">
+              <strong className="font-semibold text-[#00A859] mr-1.5">
+                [Exclusivo do seu Editor — Invisível para visitantes]:
+              </strong>
+              Clique no botão ao lado e selecione o arquivo{" "}
+              <code className="bg-white/10 px-1.5 py-0.5 rounded">Thiago Frente.jpeg</code>{" "}
+              para gravar sua foto real definitivamente no código do site e travá-la.
+            </div>
+            <label className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#00A859] hover:bg-[#008A47] text-white font-semibold text-xs sm:text-sm cursor-pointer shrink-0 transition-colors">
+              <Upload className="w-4 h-4" />
+              <span>
+                {isSavingPhoto
+                  ? "Gravando foto no código..."
+                  : "Selecionar minha foto e Travar no Site"}
+              </span>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleSaveOfficialPhotoToCode}
+                className="hidden"
+              />
+            </label>
+          </div>
+        </div>
+      )}
       {/* ==================================================
           HEADER — TOP BAR CONTRACT (3 ZONES)
          ================================================== */}
@@ -592,9 +643,9 @@ export function App() {
               {/* Specialist Portrait Card */}
               <div className="lg:col-span-5">
                 <div className="bg-white rounded-2xl border border-slate-200/90 overflow-hidden max-w-sm mx-auto lg:max-w-md shadow-xs">
-                  <div className="relative aspect-[3/4] bg-[#2B2B2B] overflow-hidden group">
+                  <div className="relative aspect-[3/4] bg-[#2B2B2B] overflow-hidden">
                     <img
-                      src={customSpecialistPhoto || specialistThiagoImg}
+                      src={livePhotoPreview || specialistThiagoImg}
                       alt="Thiago Lima — Especialista da Árakon Corretora"
                       referrerPolicy="no-referrer"
                       className="w-full h-full object-cover object-top"
@@ -602,21 +653,6 @@ export function App() {
                         e.currentTarget.style.display = "none";
                       }}
                     />
-                    <label
-                      htmlFor="specialist-photo-upload"
-                      title="Selecionar foto original do seu dispositivo (Thiago Frente.jpeg)"
-                      className="absolute top-3 right-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-black/60 hover:bg-black/80 text-white text-xs font-medium backdrop-blur-xs opacity-90 sm:opacity-0 sm:group-hover:opacity-100 focus-within:opacity-100 transition-opacity cursor-pointer"
-                    >
-                      <Camera className="w-3.5 h-3.5 text-[#00A859]" />
-                      <span>Trocar foto</span>
-                      <input
-                        id="specialist-photo-upload"
-                        type="file"
-                        accept="image/*"
-                        onChange={handleSpecialistPhotoUpload}
-                        className="sr-only"
-                      />
-                    </label>
                   </div>
                   <div className="p-6 bg-white space-y-3">
                     <div>
