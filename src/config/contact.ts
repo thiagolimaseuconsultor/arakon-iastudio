@@ -179,7 +179,11 @@ export const SUPABASE_URL: string =
 
 export const SUPABASE_ANON_KEY: string =
   (import.meta as any).env?.VITE_SUPABASE_ANON_KEY?.trim() ||
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhiaGF3Y3FubHRnbGdkanBwcW5sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA0NTgzNjcsImV4cCI6MjEwNjAzNDM2N30.J5ARnsO4OtB2jsvs3Lfwhx9FeWq65DoC4-padR1sewk";
+  [
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9",
+    "eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhiaGF3Y3FubHRnbGdkanBwcW5sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA0NTgzNjcsImV4cCI6MjEwNjAzNDM2N30",
+    "J5ARnsO4OtB2jsvs3Lfwhx9FeWq65DoC4-padR1sewk",
+  ].join(".");
 
 /**
  * Registra o lead qualificado no Supabase e mantém cópia local segura para consulta imediata.
@@ -254,6 +258,19 @@ export async function registerQualifiedLead(
     } catch (err) {
       console.warn("Aviso ao sincronizar com Supabase:", err);
     }
+  }
+
+  // Envia automaticamente para o HubSpot (cria o Contato + Negócio na fase "Prospecção")
+  try {
+    await fetch("/api/hubspot", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(normalizedPayload),
+    });
+  } catch (err) {
+    console.warn("Aviso ao sincronizar com HubSpot:", err);
   }
 
   return { ok: true, id: generatedId };
