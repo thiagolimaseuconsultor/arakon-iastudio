@@ -20,7 +20,6 @@ import {
   getWhatsAppLink,
   registerQualifiedLead,
 } from "../config/contact";
-import { useAuth } from "../context/AuthContext";
 
 interface QualificationFormProps {
   initialProfile?: string;
@@ -59,7 +58,6 @@ export const QualificationForm: React.FC<QualificationFormProps> = ({
   initialSolution = "",
   theme = "light",
 }) => {
-  const { getFreshToken } = useAuth();
   const [stage, setStage] = useState<FormStage>(1);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -249,8 +247,7 @@ export const QualificationForm: React.FC<QualificationFormProps> = ({
     setSubmitError("");
     try {
       const payload = buildLeadPayload();
-      const token = await getFreshToken();
-      await registerQualifiedLead(payload, token);
+      await registerQualifiedLead(payload);
       setStage("submitted");
     } catch (err: any) {
       setSubmitError(

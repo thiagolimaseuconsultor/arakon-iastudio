@@ -1,150 +1,132 @@
-/**
- * ==================================================
- * 31. CONFIGURAÇÃO CENTRAL DE CONVERSÃO ÁRAKON
- * ==================================================
- * Centraliza o número oficial do WhatsApp, faixas de investimento
- * e estrutura de qualificação para CRM (HubSpot / Webhook / API).
- * Para alterar o contato oficial em todo o site, edite apenas WHATSAPP_URL.
- */
-
-export const WHATSAPP_URL = "https://wa.me/5521995553350";
-
-export const DEFAULT_WHATSAPP_MESSAGE =
-  "Olá, Árakon! Gostaria de falar com um especialista sobre planos de saúde e seguros.";
-
-export const POST_FORM_DEFAULT_MESSAGE =
-  "Olá, Árakon! Acabei de preencher a análise pelo site e gostaria de conversar sobre minha necessidade.";
-
-/**
- * Gera a URL oficial do WhatsApp com mensagem pré-preenchida opcional.
- * Todos os CTAs do site utilizam esta função centralizada.
- */
-export function getWhatsAppLink(customMessage?: string): string {
-  const message = customMessage?.trim() || DEFAULT_WHATSAPP_MESSAGE;
-  return `${WHATSAPP_URL}?text=${encodeURIComponent(message)}`;
+export interface StoredLeadRecord extends CRMLeadPayload {
+  id: number;
+  status: string;
+  createdAt: string;
 }
 
-/**
- * ==================================================
- * 39. FAIXAS DE INVESTIMENTO (FACILMENTE ALTERÁVEIS)
- * ==================================================
- */
-export const INVESTMENT_RANGES: readonly string[] = [
-  "Ainda não",
-  "Até R$ 500/mês",
-  "R$ 500 a R$ 1.000/mês",
-  "R$ 1.000 a R$ 2.500/mês",
-  "Acima de R$ 2.500/mês",
-  "Prefiro conversar primeiro",
-];
+const LOCAL_LEADS_STORAGE_KEY = "arakon_qualified_leads_list_v1";
 
 /**
- * Opções da Etapa 1 — Perfil do Lead
+ * Configuracao Centralizada de Contato e Links de Conversao - Arakon Corretora
  */
-export const PROFILE_OPTIONS: readonly string[] = [
-  "Eu/minha família",
-  "Eu/minha família via CNPJ",
+
+export const WHATSAPP_NUMBER = "5521995553350";
+
+export const WHATSAPP_DEFAULT_MESSAGE =
+  "Olá, Árakon! Gostaria de falar diretamente com um especialista sobre planos de saúde, benefícios ou seguros.";
+
+export const WHATSAPP_URL = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(
+  WHATSAPP_DEFAULT_MESSAGE
+)}`;
+
+export function getWhatsAppLink(customMessage?: string): string {
+  const text =
+    customMessage && customMessage.trim().length > 0
+      ? customMessage.trim()
+      : WHATSAPP_DEFAULT_MESSAGE;
+  return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(text)}`;
+}
+
+export function buildQualifiedWhatsAppLink(
+  leadOrName: CRMLeadPayload | string,
+  interessesArg?: string[]
+): string {
+  const nome =
+    typeof leadOrName === "string" ? leadOrName : leadOrName.nome || "";
+  const interesses =
+    typeof leadOrName === "string"
+      ? interessesArg || []
+      : leadOrName.interesse || [];
+  const safeName = nome.trim() || "Visitante";
+  const safeInterests =
+    interesses.length > 0
+      ? interesses.join(", ")
+      : "soluções de proteção e saúde";
+  const message = `Olá, Árakon! Sou ${safeName}. Acabei de preencher a análise pelo site e tenho interesse em ${safeInterests}. Gostaria de conversar sobre meu cenário.`;
+  return getWhatsAppLink(message);
+}
+
+export const PROFILE_OPTIONS: string[] = [
+  "Eu / minha família",
+  "Eu / minha família (contratação via CNPJ)",
   "Minha empresa",
-  "Minha proteção pessoal",
-  "Meu patrimônio",
-  "Outro",
 ];
 
-/**
- * Rótulos amigáveis para exibição no Resumo quando aplicável
- */
 export const PROFILE_DISPLAY_LABELS: Record<string, string> = {
-  "Eu/minha família": "Eu/minha família (PF)",
-  "Eu/minha família via CNPJ": "Eu/minha família via CNPJ",
-  "Minha empresa": "Empresa / Corporativo",
-  "Minha proteção pessoal": "Proteção Pessoal",
-  "Meu patrimônio": "Proteção Patrimonial",
-  "Outro": "Outro",
+  pessoa_fisica: "Eu / minha família",
+  familiar_cnpj: "Eu / minha família (contratação via CNPJ)",
+  empresa: "Minha empresa",
+  "Eu / minha família": "Eu / minha família",
+  "Eu / minha família (contratação via CNPJ)":
+    "Eu / minha família (contratação via CNPJ)",
+  "Minha empresa": "Minha empresa",
 };
 
-/**
- * Opções da Etapa 2 — Soluções de Interesse
- */
-export const SOLUTION_OPTIONS: readonly string[] = [
-  "Revisão do meu plano atual",
+export const SOLUTION_OPTIONS: string[] = [
   "Plano de Saúde",
   "Plano Odontológico",
+  "Benefícios para Empresas",
   "Seguro de Vida",
   "Seguro Auto",
   "Seguro Residencial",
+  "Seguro Empresarial / Patrimonial",
   "Seguro Viagem",
-  "Seguro Empresarial",
-  "Revisão dos meus seguros",
-  "Ainda não sei / Quero orientação",
 ];
 
-/**
- * Opções da Etapa 3 — Momento de Compra
- */
-export const DECISION_TIMELINE_OPTIONS: readonly string[] = [
-  "Nos próximos 7 dias",
-  "Nos próximos 30 dias",
-  "Nos próximos 3 meses",
-  "Ainda estou pesquisando",
-  "Só quero entender as opções",
-];
-
-/**
- * Preocupações dinâmicas por tipo de seguro (Etapa 3 - Seguros)
- */
-export const INSURANCE_CONCERNS_BY_TYPE: Record<string, readonly string[]> = {
+export const INSURANCE_CONCERNS_BY_TYPE: Record<string, string[]> = {
   "Seguro de Vida": [
-    "Proteção da família",
-    "Sucessão",
-    "Proteção de renda",
-    "Planejamento financeiro",
-    "Outro",
-  ],
-  "Seguro Empresarial": [
-    "Proteção do patrimônio",
-    "Responsabilidade",
-    "Continuidade do negócio",
-    "Funcionários",
-    "Outro",
+    "Proteger a renda da minha família",
+    "Cobertura em vida (doenças graves / invalidez)",
+    "Planejamento sucessório / proteção de sócios",
+    "Revisar apólice atual com melhor custo-benefício",
   ],
   "Seguro Auto": [
-    "Proteção do patrimônio",
-    "Redução de custo na renovação",
-    "Cobertura completa e assistência 24h",
-    "Responsabilidade contra terceiros",
-    "Outro",
+    "Reduzir o valor na renovação do seguro",
+    "Segurar veículo novo ou recém-adquirido",
+    "Melhorar coberturas (carro reserva, vidros, terceiros)",
+    "Cotar seguro para mais de um veículo / frota",
   ],
   "Seguro Residencial": [
-    "Proteção do patrimônio",
-    "Danos elétricos, incêndio e roubo",
-    "Assistência residencial 24h",
-    "Responsabilidade familiar",
-    "Outro",
+    "Proteger casa ou apartamento contra imprevistos e danos elétricos",
+    "Contar com assistência residencial 24h",
+    "Proteger bens de maior valor no imóvel",
+    "Comparar custo-benefício de apólice residencial",
+  ],
+  "Seguro Empresarial / Patrimonial": [
+    "Proteger ponto comercial, clínica ou escritório",
+    "Cobertura para equipamentos e responsabilidade civil",
+    "Atender exigências contratuais ou de locação",
+    "Reduzir custos na renovação da apólice empresarial",
   ],
   "Seguro Viagem": [
-    "Cobertura médica internacional",
-    "Proteção da família em viagem",
-    "Bagagem e cancelamento",
-    "Viagens corporativas frequentes",
-    "Outro",
+    "Cobertura médica para viagem internacional",
+    "Proteção para viagem em família",
+    "Viagem corporativa ou intercâmbio",
+    "Entender coberturas exigidas pelo destino",
   ],
   default: [
-    "Proteção da família",
-    "Proteção do patrimônio",
-    "Sucessão",
-    "Continuidade do negócio",
-    "Planejamento financeiro",
-    "Outro",
+    "Proteger minha família e patrimônio com segurança",
+    "Reduzir custos em relação à minha apólice atual",
+    "Entender qual cobertura faz mais sentido para meu momento",
+    "Contar com suporte consultivo em caso de sinistro",
   ],
 };
 
-/**
- * ==================================================
- * 44. ESTRUTURA INTERNA PARA QUALIFICAÇÃO E CRM
- * ==================================================
- * Objeto padronizado para futura integração com HubSpot,
- * webhook, API própria, CRM ou automação de WhatsApp.
- */
+export const DECISION_TIMELINE_OPTIONS = [
+  "O quanto antes",
+  "Ainda este mês",
+  "Nos próximos meses",
+  "Estou apenas pesquisando",
+];
+
+export const INVESTMENT_RANGES = [
+  "Prefiro orientação do especialista",
+  "Até R$ 600 / mês",
+  "De R$ 600 a R$ 1.500 / mês",
+  "De R$ 1.500 a R$ 3.500 / mês",
+  "Acima de R$ 3.500 / mês",
+];
+
 export interface CRMLeadPayload {
   nome: string;
   whatsapp: string;
@@ -161,40 +143,48 @@ export interface CRMLeadPayload {
   revisar_beneficios_atuais?: string;
   desafio_empresa: string;
   tipo_seguro: string;
-  possui_seguro?: string;
+  possui_seguro: string;
   preocupacao: string;
   prazo_decisao: string;
   faixa_investimento: string;
   submitted_at?: string;
 }
 
-/**
- * Gera a URL do WhatsApp personalizada com os dados preenchidos na análise (Seção 41).
- */
-export function buildQualifiedWhatsAppLink(lead: CRMLeadPayload): string {
-  const nome = lead.nome.trim();
-  const solucoes = lead.interesse.filter(Boolean).join(", ");
-
-  if (nome && solucoes) {
-    const msg = `Olá, Árakon! Sou ${nome}. Acabei de preencher a análise pelo site e tenho interesse em ${solucoes}. Gostaria de conversar sobre meu cenário.`;
-    return `${WHATSAPP_URL}?text=${encodeURIComponent(msg)}`;
+export function getLocalStoredLeads(): StoredLeadRecord[] {
+  try {
+    const raw = localStorage.getItem(LOCAL_LEADS_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
   }
+}
 
-  return `${WHATSAPP_URL}?text=${encodeURIComponent(POST_FORM_DEFAULT_MESSAGE)}`;
+export function updateLocalLeadStatus(id: number, status: string): void {
+  try {
+    const current = getLocalStoredLeads();
+    const updated = current.map((item) =>
+      item.id === id ? { ...item, status } : item
+    );
+    localStorage.setItem(LOCAL_LEADS_STORAGE_KEY, JSON.stringify(updated));
+  } catch {
+    // Ignora falhas de storage
+  }
 }
 
 /**
- * Camada de serviço integrada ao banco de dados (/api/leads e Supabase quando configurado).
- * Funciona tanto no servidor completo quanto em hospedagem estática via GitHub (Vercel/Netlify)
- * antes ou depois de configurar as variáveis VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY.
+ * Registra o lead qualificado no Supabase (quando VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY
+ * estiverem configuradas) e mantém cópia local segura para consulta imediata.
  */
 export async function registerQualifiedLead(
-  payload: CRMLeadPayload,
-  idToken?: string | null
+  payload: CRMLeadPayload
 ): Promise<{ ok: boolean; id?: number }> {
+  const nowIso = new Date().toISOString();
+  const generatedId = Date.now();
   const normalizedPayload: CRMLeadPayload = {
     ...payload,
-    submitted_at: new Date().toISOString(),
+    submitted_at: nowIso,
   };
 
   try {
@@ -202,17 +192,28 @@ export async function registerQualifiedLead(
       "arakon_last_qualified_lead",
       JSON.stringify(normalizedPayload)
     );
+    const existing = getLocalStoredLeads();
+    const newRecord: StoredLeadRecord = {
+      ...normalizedPayload,
+      id: generatedId,
+      status: "novo",
+      createdAt: nowIso,
+    };
+    localStorage.setItem(
+      LOCAL_LEADS_STORAGE_KEY,
+      JSON.stringify([newRecord, ...existing])
+    );
   } catch {
     // Ignora falhas de storage em modo privado restrito
   }
 
-  // 1. Se o Supabase externo estiver configurado via variáveis de ambiente (VITE_SUPABASE_URL)
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL?.trim();
-  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY?.trim();
+  const supabaseUrl = (import.meta as any).env?.VITE_SUPABASE_URL?.trim();
+  const supabaseAnonKey = (import.meta as any).env?.VITE_SUPABASE_ANON_KEY?.trim();
 
   if (supabaseUrl && supabaseAnonKey) {
     try {
-      await fetch(`${supabaseUrl.replace(/\/$/, "")}/rest/v1/qualified_leads`, {
+      const endpoint = `${supabaseUrl.replace(/\/$/, "")}/rest/v1/qualified_leads`;
+      await fetch(endpoint, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -223,54 +224,33 @@ export async function registerQualifiedLead(
         body: JSON.stringify({
           nome: normalizedPayload.nome,
           whatsapp: normalizedPayload.whatsapp,
-          email: normalizedPayload.email,
+          email: normalizedPayload.email || "",
           perfil: normalizedPayload.perfil,
-          interesse: normalizedPayload.interesse.join(", "),
-          possui_plano: normalizedPayload.possui_plano,
-          satisfacao: normalizedPayload.satisfacao,
-          motivo_mudanca: normalizedPayload.motivo_mudanca,
-          quantidade_pessoas: normalizedPayload.quantidade_pessoas,
-          cidade: normalizedPayload.cidade,
-          tamanho_empresa: normalizedPayload.tamanho_empresa,
-          possui_beneficios: normalizedPayload.possui_beneficios,
+          interesse: Array.isArray(normalizedPayload.interesse)
+            ? normalizedPayload.interesse.join(", ")
+            : String(normalizedPayload.interesse || ""),
+          possui_plano: normalizedPayload.possui_plano || "",
+          satisfacao: normalizedPayload.satisfacao || "",
+          motivo_mudanca: normalizedPayload.motivo_mudanca || "",
+          quantidade_pessoas: normalizedPayload.quantidade_pessoas || "",
+          cidade: normalizedPayload.cidade || "",
+          tamanho_empresa: normalizedPayload.tamanho_empresa || "",
+          possui_beneficios: normalizedPayload.possui_beneficios || "",
           revisar_beneficios_atuais:
             normalizedPayload.revisar_beneficios_atuais || "",
-          desafio_empresa: normalizedPayload.desafio_empresa,
-          tipo_seguro: normalizedPayload.tipo_seguro,
+          desafio_empresa: normalizedPayload.desafio_empresa || "",
+          tipo_seguro: normalizedPayload.tipo_seguro || "",
           possui_seguro: normalizedPayload.possui_seguro || "",
-          preocupacao: normalizedPayload.preocupacao,
-          prazo_decisao: normalizedPayload.prazo_decisao,
-          faixa_investimento: normalizedPayload.faixa_investimento,
+          preocupacao: normalizedPayload.preocupacao || "",
+          prazo_decisao: normalizedPayload.prazo_decisao || "",
+          faixa_investimento: normalizedPayload.faixa_investimento || "",
+          status: "novo",
         }),
       });
     } catch (err) {
-      console.warn("Aviso ao sincronizar com Supabase externo:", err);
+      console.warn("Aviso ao sincronizar com Supabase:", err);
     }
   }
 
-  // 2. Envia para a rota de backend (/api/leads) quando disponível
-  try {
-    const headers: Record<string, string> = {
-      "Content-Type": "application/json",
-    };
-    if (idToken) {
-      headers.Authorization = `Bearer ${idToken}`;
-    }
-
-    const response = await fetch("/api/leads", {
-      method: "POST",
-      headers,
-      body: JSON.stringify(normalizedPayload),
-    });
-
-    if (response.ok) {
-      const data = await response.json();
-      return { ok: true, id: data.id };
-    }
-  } catch {
-    // Em publicação estática (ex: GitHub Pages / Vercel estático antes de configurar o Supabase),
-    // mantém o fluxo de conversão para o WhatsApp funcionando sem bloquear o visitante.
-  }
-
-  return { ok: true };
+  return { ok: true, id: generatedId };
 }
