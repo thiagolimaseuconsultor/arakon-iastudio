@@ -184,8 +184,9 @@ export function buildQualifiedWhatsAppLink(lead: CRMLeadPayload): string {
 }
 
 /**
- * Camada de serviço integrada ao banco de dados relacional via /api/leads.
- * Mantém os dados estruturados sem expor o objeto bruto na interface.
+ * Camada de serviço integrada ao banco de dados (/api/leads e Supabase quando configurado).
+ * Funciona tanto no servidor completo quanto em hospedagem estática via GitHub (Vercel/Netlify)
+ * antes ou depois de configurar as variáveis VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY.
  */
 export async function registerQualifiedLead(
   payload: CRMLeadPayload,
@@ -205,26 +206,71 @@ export async function registerQualifiedLead(
     // Ignora falhas de storage em modo privado restrito
   }
 
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-  };
-  if (idToken) {
-    headers.Authorization = `Bearer ${idToken}`;
+  // 1. Se o Supabase externo estiver configurado via variáveis de ambiente (VITE_SUPABASE_URL)
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL?.trim();
+  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY?.trim();
+
+  if (supabaseUrl && supabaseAnonKey) {
+    try {
+      await fetch(`${supabaseUrl.replace(/\/$/, "")}/rest/v1/qualified_leads`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: supabaseAnonKey,
+          Authorization: `Bearer ${supabaseAnonKey}`,
+          Prefer: "return=minimal",
+        },
+        body: JSON.stringify({
+          nome: normalizedPayload.nome,
+          whatsapp: normalizedPayload.whatsapp,
+          email: normalizedPayload.email,
+          perfil: normalizedPayload.perfil,
+          interesse: normalizedPayload.interesse.join(", "),
+          possui_plano: normalizedPayload.possui_plano,
+          satisfacao: normalizedPayload.satisfacao,
+          motivo_mudanca: normalizedPayload.motivo_mudanca,
+          quantidade_pessoas: normalizedPayload.quantidade_pessoas,
+          cidade: normalizedPayload.cidade,
+          tamanho_empresa: normalizedPayload.tamanho_empresa,
+          possui_beneficios: normalizedPayload.possui_beneficios,
+          revisar_beneficios_atuais:
+            normalizedPayload.revisar_beneficios_atuais || "",
+          desafio_empresa: normalizedPayload.desafio_empresa,
+          tipo_seguro: normalizedPayload.tipo_seguro,
+          possui_seguro: normalizedPayload.possui_seguro || "",
+          preocupacao: normalizedPayload.preocupacao,
+          prazo_decisao: normalizedPayload.prazo_decisao,
+          faixa_investimento: normalizedPayload.faixa_investimento,
+        }),
+      });
+    } catch (err) {
+      console.warn("Aviso ao sincronizar com Supabase externo:", err);
+    }
   }
 
-  const response = await fetch("/api/leads", {
-    method: "POST",
-    headers,
-    body: JSON.stringify(normalizedPayload),
-  });
+  // 2. Envia para a rota de backend (/api/leads) quando disponível
+  try {
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+    if (idToken) {
+      headers.Authorization = `Bearer ${idToken}`;
+    }
 
-  if (!response.ok) {
-    const errData = await response.json().catch(() => ({}));
-    throw new Error(
-      errData.error || "Não foi possível registrar sua solicitação no momento."
-    );
+    const response = await fetch("/api/leads", {
+      method: "POST",
+      headers,
+      body: JSON.stringify(normalizedPayload),
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      return { ok: true, id: data.id };
+    }
+  } catch {
+    // Em publicação estática (ex: GitHub Pages / Vercel estático antes de configurar o Supabase),
+    // mantém o fluxo de conversão para o WhatsApp funcionando sem bloquear o visitante.
   }
 
-  const data = await response.json();
-  return { ok: true, id: data.id };
+  return { ok: true };
 }
