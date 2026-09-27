@@ -173,9 +173,16 @@ export function updateLocalLeadStatus(id: number, status: string): void {
   }
 }
 
+export const SUPABASE_URL: string =
+  (import.meta as any).env?.VITE_SUPABASE_URL?.trim() ||
+  "https://xbhawcqnltglgdjppqnl.supabase.co";
+
+export const SUPABASE_ANON_KEY: string =
+  (import.meta as any).env?.VITE_SUPABASE_ANON_KEY?.trim() ||
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhiaGF3Y3FubHRnbGdkanBwcW5sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA0NTgzNjcsImV4cCI6MjEwNjAzNDM2N30.J5ARnsO4OtB2jsvs3Lfwhx9FeWq65DoC4-padR1sewk";
+
 /**
- * Registra o lead qualificado no Supabase (quando VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY
- * estiverem configuradas) e mantém cópia local segura para consulta imediata.
+ * Registra o lead qualificado no Supabase e mantém cópia local segura para consulta imediata.
  */
 export async function registerQualifiedLead(
   payload: CRMLeadPayload
@@ -207,18 +214,15 @@ export async function registerQualifiedLead(
     // Ignora falhas de storage em modo privado restrito
   }
 
-  const supabaseUrl = (import.meta as any).env?.VITE_SUPABASE_URL?.trim();
-  const supabaseAnonKey = (import.meta as any).env?.VITE_SUPABASE_ANON_KEY?.trim();
-
-  if (supabaseUrl && supabaseAnonKey) {
+  if (SUPABASE_URL && SUPABASE_ANON_KEY) {
     try {
-      const endpoint = `${supabaseUrl.replace(/\/$/, "")}/rest/v1/qualified_leads`;
+      const endpoint = `${SUPABASE_URL.replace(/\/$/, "")}/rest/v1/qualified_leads`;
       await fetch(endpoint, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          apikey: supabaseAnonKey,
-          Authorization: `Bearer ${supabaseAnonKey}`,
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
           Prefer: "return=minimal",
         },
         body: JSON.stringify({

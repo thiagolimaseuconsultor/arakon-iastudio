@@ -9,6 +9,8 @@ import {
 import {
   WHATSAPP_URL,
   PROFILE_DISPLAY_LABELS,
+  SUPABASE_URL,
+  SUPABASE_ANON_KEY,
   getLocalStoredLeads,
   updateLocalLeadStatus,
 } from "../config/contact";
@@ -62,15 +64,12 @@ export const LeadsAdminModal: React.FC<LeadsAdminModalProps> = ({
     setLoading(true);
     setError("");
     try {
-      const supabaseUrl = (import.meta as any).env?.VITE_SUPABASE_URL?.trim();
-      const supabaseAnonKey = (import.meta as any).env?.VITE_SUPABASE_ANON_KEY?.trim();
-
-      if (supabaseUrl && supabaseAnonKey) {
-        const endpoint = `${supabaseUrl.replace(/\/$/, "")}/rest/v1/qualified_leads?select=*&order=created_at.desc`;
+      if (SUPABASE_URL && SUPABASE_ANON_KEY) {
+        const endpoint = `${SUPABASE_URL.replace(/\/$/, "")}/rest/v1/qualified_leads?select=*&order=created_at.desc`;
         const response = await fetch(endpoint, {
           headers: {
-            apikey: supabaseAnonKey,
-            Authorization: `Bearer ${supabaseAnonKey}`,
+            apikey: SUPABASE_ANON_KEY,
+            Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
           },
         });
         if (response.ok) {
